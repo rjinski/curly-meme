@@ -1,0 +1,103 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: poc-hello-world-
+spec:
+  # arguments
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+
+  # volumes
+  volumeClaimTemplates:
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+
+  entrypoint: tasks
+  templates:
+    # DAG
+    - name: tasks
+      dag:
+        tasks:
+          - name: git-clone
+            template: git-clone
+            dependencies: []
+            arguments:
+              parameters:
+                - name: gitURL
+                  value: git@github.com:db-improbable/friendly-barnacle.git
+                - name: gitBranch
+                  value: master
+                - name: volumeName
+                  value: workdir
+                - name: volumePath
+                  value: /workdir
+
+          - name: make-build
+            template: make-cmd
+            dependencies: [git-clone]
+            arguments:
+              parameters:
+                - name: cmd
+                  value: build
+                - name: volumeName
+                  value: workdir
+                - name: volumePath
+                  value: /workdir
+
+    # template: checkout
+    - name: git-clone
+      inputs:
+        parameters:
+          - name: gitURL
+          - name: gitBranch
+          - name: volumeName
+          - name: volumePath
+      container:
+        image: alpine/git:latest
+        command: ["sh", "-c"]
+        args:
+          [
+            "git clone --branch {{inputs.parameters.gitBranch}} {{inputs.parameters.gitURL}} {{inputs.parameters.volumePath}}",
+          ]
+        volumeMounts:
+          - name: "{{inputs.parameters.volumeName}}"
+            mountPath: "{{inputs.parameters.volumePath}}"
+
+    # template: build
+    - name: make-cmd
+      inputs:
+        parameters:
+          - name: cmd
+          - name: volumeName
+          - name: volumePath
+      container:
+        image: docker:19.03.13
+        workingDir: "{{inputs.parameters.volumePath}}"
+        command: [sh, -c]
+        args:
+          [
+            "until docker ps; do sleep 3; done; make {{inputs.parameters.cmd}}",
+          ]
+        env:
+          - name: DOCKER_HOST
+            value: 127.0.0.1
+        volumeMounts:
+          - name: "{{inputs.parameters.volumeName}}"
+            mountPath: "{{inputs.parameters.volumePath}}"
+      sidecars:
+        - name: dind
+          image: docker:19.03.13-dind
+          command: [dockerd-entrypoint.sh]
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: ""
+          securityContext:
+            privileged: true
+          mirrorVolumeMounts: true

@@ -1,0 +1,26 @@
+global:
+  postgresql:
+    enabled: true
+
+image:
+  repository: hello-world
+  pullPolicy: IfNotPresent
+  tag: "local"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: LoadBalancer
+  port: 8081
+
+ingress:
+  enabled: false
