@@ -5,7 +5,7 @@ APP_NAME:=hello-world
 APP_IMAGE:=hello-world
 APP_VERSION:=local
 
-GO_BUILD_IMAGE:=golang:1.8
+GO_BUILD_IMAGE:=golang:1.19
 
 REMOTE_TARGET_REGISTRY:='hello-world'
 

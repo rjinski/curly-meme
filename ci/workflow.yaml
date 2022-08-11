@@ -31,9 +31,9 @@ spec:
             arguments:
               parameters:
                 - name: gitURL
-                  value: git@github.com:db-improbable/friendly-barnacle.git
+                  value: https://github.com/rjinski/curly-meme.git
                 - name: gitBranch
-                  value: master
+                  value: main
                 - name: volumeName
                   value: workdir
                 - name: volumePath
@@ -78,13 +78,12 @@ spec:
           - name: volumeName
           - name: volumePath
       container:
-        image: docker:19.03.13
+        image: builder:latest
+        imagePullPolicy: IfNotPresent
         workingDir: "{{inputs.parameters.volumePath}}"
         command: [sh, -c]
         args:
-          [
-            "until docker ps; do sleep 3; done; make {{inputs.parameters.cmd}}",
-          ]
+          ["until docker ps; do sleep 3; done; make {{inputs.parameters.cmd}}"]
         env:
           - name: DOCKER_HOST
             value: 127.0.0.1
@@ -93,7 +92,7 @@ spec:
             mountPath: "{{inputs.parameters.volumePath}}"
       sidecars:
         - name: dind
-          image: docker:19.03.13-dind
+          image: docker:20.10.17-dind
           command: [dockerd-entrypoint.sh]
           env:
             - name: DOCKER_TLS_CERTDIR

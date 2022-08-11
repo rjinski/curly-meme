@@ -2,6 +2,10 @@ ARG GO_BUILD_IMAGE
 
 from ${GO_BUILD_IMAGE} as build
 workdir /app
+
+copy go.mod /app
+run go mod download
+
 copy main.go /app
 copy src /app/src
 run CGO_ENABLED=0 GOOS=linux go build -ldflags '-w -s' -a -installsuffix cgo -o helloworld
